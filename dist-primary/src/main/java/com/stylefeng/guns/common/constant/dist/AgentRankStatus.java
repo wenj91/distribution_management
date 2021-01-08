@@ -11,21 +11,22 @@ public enum AgentRankStatus {
     /**
      * 普通平台商
      */
-    A_STATUS("N1","初级平台商",1),
+    A_STATUS("N1", "初级平台商", 1),
     /**
      * 中级平台商
      */
-    B_STATUS("N2","中级平台商",2),
+    B_STATUS("N2", "中级平台商", 2),
     /**
      * 高级平台商
      */
-    C_STATUS("N3","高级平台商",3);
+    C_STATUS("N3", "高级平台商", 3);
     private String status;
     private String mes;
 
     private int order;
 
     private static Map<String, AgentRankStatus> map = new HashMap<String, AgentRankStatus>();
+
     static {
         for (AgentRankStatus legEnum : AgentRankStatus.values()) {
             map.put(legEnum.getStatus(), legEnum);
@@ -33,9 +34,9 @@ public enum AgentRankStatus {
     }
 
     AgentRankStatus(String status, String mes, int order) {
-        this.status=status;
-        this.mes=mes;
-        this.order=order;
+        this.status = status;
+        this.mes = mes;
+        this.order = order;
     }
 
     public static AgentRankStatus getMethod(String symbol) {

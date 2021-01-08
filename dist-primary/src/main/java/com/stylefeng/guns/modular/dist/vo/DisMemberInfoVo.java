@@ -2,18 +2,39 @@ package com.stylefeng.guns.modular.dist.vo;
 
 public class DisMemberInfoVo   {
 
+    /**
+     * 密钥
+     */
     private String  secret;
 
+    /**
+     * 平台id
+     */
     private String disPlatformId;
 
+    /**
+     * 用户id
+     */
     private String disUserId;
 
+    /**
+     * 父类id
+     */
     private String disParentId;
 
+    /**
+     * 用户名称
+     */
     private String disUserName;
 
+    /**
+     * 用户类型
+     */
     private String disUserType;
 
+    /**
+     * 备注
+     */
     private String disNote;
 
 

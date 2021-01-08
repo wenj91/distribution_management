@@ -20,7 +20,7 @@ public class PageFactory<T> {
         HttpServletRequest request = HttpKit.getRequest();
         int limit = Integer.valueOf(request.getParameter("limit"));
         int offset = Integer.valueOf(request.getParameter("offset"));
-        Page<T> page = PageHelper.startPage((offset / limit + 1), limit,true);
+        Page<T> page = PageHelper.startPage((offset / limit + 1), limit, true);
         return page;
     }
 }

@@ -4,25 +4,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author  xiaojiang
+ * @author xiaojiang
  */
-public enum  UserTypeStatus {
+public enum UserTypeStatus {
     /**
      * 游客
      */
-    ZERO_STATUS("0","游客",0),
+    ZERO_STATUS("0", "游客", 0),
     /**
      * 经理
      */
-    ONE_STATUS("1","经理",1),
+    ONE_STATUS("1", "经理", 1),
     /**
      * 老板
      */
-    TWO_STATUS("2","老板",2),
+    TWO_STATUS("2", "老板", 2),
     /**
      * 平台标识
      */
-    PLAT_STATUS("10000","平台标识",10000);
+    PLAT_STATUS("10000", "平台标识", 10000);
 
     private String status;
 
@@ -31,16 +31,17 @@ public enum  UserTypeStatus {
     private int order;
 
     private static Map<String, UserTypeStatus> map = new HashMap<String, UserTypeStatus>();
+
     static {
         for (UserTypeStatus legEnum : UserTypeStatus.values()) {
             map.put(legEnum.getStatus(), legEnum);
         }
     }
 
-    UserTypeStatus(String status, String mes,int order) {
-        this.status=status;
-        this.mes=mes;
-        this.order=order;
+    UserTypeStatus(String status, String mes, int order) {
+        this.status = status;
+        this.mes = mes;
+        this.order = order;
     }
 
     public static UserTypeStatus getMethod(String symbol) {

@@ -7,16 +7,17 @@ public enum JurisdictionStatus {
     /**
      * 一级代理（平台商）对应的roleId
      */
-    LEVEL_1_STATUS("1","5","一级代理（平台商）对应的roleId"),
-    LEVEL_2_STATUS("2","7","二级代理对应的roleId"),
-    LEVEL_3_STATUS("3","8","三级代理对应的roleId"),
-    LEVEL_4_STATUS("4","9","四级代理对应的roleId"),
-    LEVEL_5_STATUS("5","10","四级代理对应的roleId");
+    LEVEL_1_STATUS("1", "5", "一级代理（平台商）对应的roleId"),
+    LEVEL_2_STATUS("2", "7", "二级代理对应的roleId"),
+    LEVEL_3_STATUS("3", "8", "三级代理对应的roleId"),
+    LEVEL_4_STATUS("4", "9", "四级代理对应的roleId"),
+    LEVEL_5_STATUS("5", "10", "四级代理对应的roleId");
     private String level;
     private String roleId;
     private String des;
 
     private static Map<String, JurisdictionStatus> map = new HashMap<String, JurisdictionStatus>();
+
     static {
         for (JurisdictionStatus legEnum : JurisdictionStatus.values()) {
             map.put(legEnum.getLevel(), legEnum);
@@ -24,9 +25,9 @@ public enum JurisdictionStatus {
     }
 
     JurisdictionStatus(String level, String roleId, String des) {
-        this.level=level;
-        this.roleId=roleId;
-        this.des=des;
+        this.level = level;
+        this.roleId = roleId;
+        this.des = des;
     }
 
     public static JurisdictionStatus getMethod(String level) {

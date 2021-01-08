@@ -12,7 +12,7 @@ public enum CalModelStatus {
     /**
      * 按照百分比
      */
-    ZERO_STATUS("0","按照百分比计算") {
+    ZERO_STATUS("0", "按照百分比计算") {
         @Override
         public BigDecimal calResult(BigDecimal amount, BigDecimal arg) {
             return amount.multiply(arg);
@@ -21,7 +21,7 @@ public enum CalModelStatus {
     /**
      * 按照固定金额
      */
-    ONE_STATUS("1","按照固定值结算") {
+    ONE_STATUS("1", "按照固定值结算") {
         @Override
         public BigDecimal calResult(BigDecimal amount, BigDecimal arg) {
             return arg;
@@ -29,21 +29,25 @@ public enum CalModelStatus {
     };
     private String status;
     private String mes;
-    public abstract BigDecimal calResult(BigDecimal amount,BigDecimal arg);
+
+    public abstract BigDecimal calResult(BigDecimal amount, BigDecimal arg);
 
 
     private static Map<String, CalModelStatus> map = new HashMap<String, CalModelStatus>();
+
     static {
         for (CalModelStatus legEnum : CalModelStatus.values()) {
             map.put(legEnum.getStatus(), legEnum);
         }
     }
+
     public static CalModelStatus getMethod(String symbol) {
         return map.get(symbol);
     }
+
     CalModelStatus(String status, String mes) {
-        this.status=status;
-        this.mes=mes;
+        this.status = status;
+        this.mes = mes;
     }
 
 

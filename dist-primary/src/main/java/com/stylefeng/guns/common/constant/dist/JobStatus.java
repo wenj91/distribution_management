@@ -5,18 +5,18 @@ public enum JobStatus {
     /**
      * 启用
      */
-    FIRST_STATUS("1","启用"),
+    FIRST_STATUS("1", "启用"),
     /**
      * 停用
      */
-    SECOND_STATUS("2","停用");
+    SECOND_STATUS("2", "停用");
 
     private String status;
     private String mes;
 
     JobStatus(String status, String mes) {
-        this.status=status;
-        this.mes=mes;
+        this.status = status;
+        this.mes = mes;
     }
 
     public String getStatus() {

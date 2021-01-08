@@ -7,16 +7,19 @@ import com.stylefeng.guns.common.constant.DSEnum;
 import com.stylefeng.guns.common.constant.dist.AccountTypeStatus;
 import com.stylefeng.guns.common.constant.dist.IdentityStatus;
 import com.stylefeng.guns.common.constant.dist.SystemUser;
-import com.stylefeng.guns.common.constant.dist.UserTypeStatus;
-import com.stylefeng.guns.common.persistence.dao.*;
-import com.stylefeng.guns.common.persistence.model.*;
+import com.stylefeng.guns.common.persistence.dao.DisMemberInfoMapper;
+import com.stylefeng.guns.common.persistence.dao.DisRankIntegralRecordMapper;
+import com.stylefeng.guns.common.persistence.dao.DisRankParamMapper;
+import com.stylefeng.guns.common.persistence.dao.SysDicMapper;
+import com.stylefeng.guns.common.persistence.model.DisMemberInfo;
+import com.stylefeng.guns.common.persistence.model.DisRankIntegralRecord;
+import com.stylefeng.guns.common.persistence.model.DisRankParam;
+import com.stylefeng.guns.common.persistence.model.SysDic;
+import com.stylefeng.guns.modular.dist.service.IDisSysIntegralRecordService;
 import com.stylefeng.guns.modular.dist.util.DateUtils;
-import com.stylefeng.guns.modular.dist.vo.DisProfitRecordVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.stylefeng.guns.modular.dist.service.IDisSysIntegralRecordService;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -47,47 +50,53 @@ public class DisSysIntegralRecordServiceImpl implements IDisSysIntegralRecordSer
 
     /**
      * 根据积分设置获取积分
+     *
      * @param accountType
      * @param amount
      * @param memberInfo
      */
     @Override
-    @DataSource(name= DSEnum.DATA_SOURCE_BIZ)
-    public void saveIntegral(String accountType,BigDecimal amount,DisMemberInfo memberInfo) throws Exception {
+    @DataSource(name = DSEnum.DATA_SOURCE_BIZ)
+    public void saveIntegral(String accountType, BigDecimal amount, DisMemberInfo memberInfo) throws Exception {
+        if (memberInfo == null) {
+            return;
+        }
 
         //dis_pro_type可以是交易，升级、邀请等等
-        Wrapper<DisRankParam> profiParamP=new EntityWrapper<>();
-        profiParamP.eq("dis_platform_id",memberInfo.getDisPlatformId())
-                .eq("account_type",accountType)
-                .eq("identity_type", IdentityStatus.USER_STATUS.getStatus());
-        List<DisRankParam> profiParamList=disRankParamMapper.selectList(profiParamP);
-        if(profiParamList.size()>0){
-            if(memberInfo==null){
-                return ;
-            }
-            String[] levelInfo=memberInfo.getDisFullIndex().split("\\.");
-            for (DisRankParam disRankParam:profiParamList){
-                Integer level=Integer.parseInt(disRankParam.getDisProLevel());
-                if(level<=levelInfo.length-1){
+        // 分润配置表
+        Wrapper<DisRankParam> profiParamP = new EntityWrapper<>();
+        profiParamP.eq("dis_platform_id", memberInfo.getDisPlatformId()) // 根据平台id
+                .eq("account_type", accountType) // 账号类型
+                .eq("identity_type", IdentityStatus.USER_STATUS.getStatus()); // 标识类型查出对应分润配置
+        List<DisRankParam> profiParamList = disRankParamMapper.selectList(profiParamP);
+        if (profiParamList.size() > 0) {
+            String[] levelInfo = memberInfo.getDisFullIndex().split("\\.");
+            for (DisRankParam disRankParam : profiParamList) {
+                int level = Integer.parseInt(disRankParam.getDisProLevel()); // 当前分润配置级别
+
+                // 只有上级才需要计算分润
+                if (level <= levelInfo.length - 1) {
                     //如果等级不对也无需计算分润
-                    String userId= levelInfo[levelInfo.length-(level+1)];
-                    DisMemberInfo subMemberParam=new DisMemberInfo();
+                    String userId = levelInfo[levelInfo.length - (level + 1)]; // 拿到对应上级id
+                    DisMemberInfo subMemberParam = new DisMemberInfo();
                     subMemberParam.setDisUserId(userId);
-                    DisMemberInfo subMember=disMemberInfoMapper.selectOne(subMemberParam);
+                    DisMemberInfo subMember = disMemberInfoMapper.selectOne(subMemberParam); // 上级用户信息
+
                     //如果用户的用户类型和分润的用户类型不一样则不能分配分润，跳转到下一个，继续执行
-                    if(!subMember.getDisUserType().equals(disRankParam.getDisUserType())){
+                    if (!subMember.getDisUserType().equals(disRankParam.getDisUserType())) {
                         continue;
                     }
-                    BigDecimal value=new BigDecimal(disRankParam.getDisIntegralValue());
-                    BigDecimal newIntegralBg=new BigDecimal(0);
-                    if("0".equals(disRankParam.getCalModel())){
-                        newIntegralBg=amount.multiply(value).setScale(0,BigDecimal.ROUND_HALF_UP);
-                    }else{
-                        newIntegralBg=value.setScale(0,BigDecimal.ROUND_HALF_UP);
+
+                    BigDecimal value = new BigDecimal(disRankParam.getDisIntegralValue());
+                    BigDecimal newIntegralBg;
+                    if ("0".equals(disRankParam.getCalModel())) {
+                        newIntegralBg = amount.multiply(value).setScale(0, BigDecimal.ROUND_HALF_UP);
+                    } else {
+                        newIntegralBg = value.setScale(0, BigDecimal.ROUND_HALF_UP);
                     }
-                    Integer newIntegral=Integer.parseInt(String.valueOf(newIntegralBg));
-                    Integer totalIntegral=newIntegral+subMember.getRankIntegral();
-                    Integer totalRankIntegral = newIntegral+ subMember.getTotalRankIntegral();
+                    Integer newIntegral = Integer.parseInt(String.valueOf(newIntegralBg));
+                    Integer totalIntegral = newIntegral + subMember.getRankIntegral();
+                    Integer totalRankIntegral = newIntegral + subMember.getTotalRankIntegral();
                     DisRankIntegralRecord record = new DisRankIntegralRecord();
                     record.setBeforeIntegral(subMember.getRankIntegral());
                     record.setIsUse("N");
@@ -98,26 +107,26 @@ public class DisSysIntegralRecordServiceImpl implements IDisSysIntegralRecordSer
                     record.setSourceUserId(memberInfo.getDisUserId());
                     record.setSysIntegral(newIntegral);
 
-                    SysDic dic=new SysDic();
+                    SysDic dic = new SysDic();
                     dic.setDicTypeNo("effectiveTime");
-                    SysDic sysDic=sysDicMapper.selectOne(dic);
+                    SysDic sysDic = sysDicMapper.selectOne(dic);
                     record.setExpireTime(DateUtils.plusDay(Integer.parseInt(sysDic.getDicNo())));
-                    String sourceRemark="";
-                    if("0".equals(accountType)){
-                        String des= AccountTypeStatus.ZERO_STATUS.getIntDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,amount.toString()
-                                ,newIntegral);
-                    }else if("1".equals(accountType)){
-                        String des= AccountTypeStatus.ONE_STATUS.getIntDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,newIntegral);
-                    }else if("2".equals(accountType)){
-                        String des= AccountTypeStatus.TWO_STATUS.getIntDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,newIntegral);
-                    }else {
-                        throw  new Exception("没有对应积分账户类型");
+                    String sourceRemark = "";
+                    if ("0".equals(accountType)) {
+                        String des = AccountTypeStatus.ZERO_STATUS.getIntDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , amount.toString()
+                                , newIntegral);
+                    } else if ("1".equals(accountType)) {
+                        String des = AccountTypeStatus.ONE_STATUS.getIntDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , newIntegral);
+                    } else if ("2".equals(accountType)) {
+                        String des = AccountTypeStatus.TWO_STATUS.getIntDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , newIntegral);
+                    } else {
+                        throw new Exception("没有对应积分账户类型");
                     }
                     record.setSourceRemak(sourceRemark);
                     //新增积分
@@ -140,50 +149,50 @@ public class DisSysIntegralRecordServiceImpl implements IDisSysIntegralRecordSer
      * @throws Exception
      */
     @Override
-    @DataSource(name= DSEnum.DATA_SOURCE_BIZ)
-    public void saveAgentIntegral(String accountType,BigDecimal amount,DisMemberInfo memberInfo) throws Exception {
+    @DataSource(name = DSEnum.DATA_SOURCE_BIZ)
+    public void saveAgentIntegral(String accountType, BigDecimal amount, DisMemberInfo memberInfo) throws Exception {
         logger.info("开始处理平台商积分");
         //dis_pro_type可以是交易，升级、邀请等等
-        Wrapper<DisRankParam> profiParamP=new EntityWrapper<>();
-        profiParamP.eq("dis_platform_id",memberInfo.getDisPlatformId())
-                .eq("account_type",accountType)
+        Wrapper<DisRankParam> profiParamP = new EntityWrapper<>();
+        profiParamP.eq("dis_platform_id", memberInfo.getDisPlatformId())
+                .eq("account_type", accountType)
                 .eq("identity_type", IdentityStatus.PLAT_STATUS.getStatus());
-        List<DisRankParam> profiParamList=disRankParamMapper.selectList(profiParamP);
-        if(profiParamList.size()>0){
-            if(memberInfo==null){
-                return ;
+        List<DisRankParam> profiParamList = disRankParamMapper.selectList(profiParamP);
+        if (profiParamList.size() > 0) {
+            if (memberInfo == null) {
+                return;
             }
-            String[] levelInfo=memberInfo.getDisPlatFullIndex().split("\\.");
-            for (DisRankParam disRankParam:profiParamList){
-                Integer level=Integer.parseInt(disRankParam.getDisProLevel());
-                level = level +1 ;
+            String[] levelInfo = memberInfo.getDisPlatFullIndex().split("\\.");
+            for (DisRankParam disRankParam : profiParamList) {
+                Integer level = Integer.parseInt(disRankParam.getDisProLevel());
+                level = level + 1;
                 // 平台商为正序排序  admin.dist.yiji_ceshi
                 // 第一次取 level+1 ,如一级为自身 1+0 =1 取 dist
-                if(level.intValue()<levelInfo.length){
+                if (level.intValue() < levelInfo.length) {
                     //如果等级不对也无需计算分润 level +1
-                    String userId= levelInfo[level];
-                    logger.info("{}级{}平台商账户，开始分配积分",level,userId);
-                    if(SystemUser.ADMIN_INFO.getInfo().equals(userId)){
+                    String userId = levelInfo[level];
+                    logger.info("{}级{}平台商账户，开始分配积分", level, userId);
+                    if (SystemUser.ADMIN_INFO.getInfo().equals(userId)) {
                         logger.info("admin用户不参与计算");
                         continue;
                     }
-                    DisMemberInfo subMemberParam=new DisMemberInfo();
+                    DisMemberInfo subMemberParam = new DisMemberInfo();
                     subMemberParam.setDisUserId(userId);
-                    DisMemberInfo subMember=disMemberInfoMapper.selectOne(subMemberParam);
+                    DisMemberInfo subMember = disMemberInfoMapper.selectOne(subMemberParam);
                     //如果用户的用户类型和分润的用户类型不一样则不能分配分润，跳转到下一个，继续执行
                    /* if(!subMember.getAgentRank().equals(disRankParam.getDisUserType())){
                         continue;
                     }*/
-                    BigDecimal value=new BigDecimal(disRankParam.getDisIntegralValue());
-                    BigDecimal newIntegralBg=new BigDecimal(0);
-                    if("0".equals(disRankParam.getCalModel())){
-                        newIntegralBg=amount.multiply(value).setScale(0,BigDecimal.ROUND_HALF_UP);
-                    }else{
-                        newIntegralBg=value.setScale(0,BigDecimal.ROUND_HALF_UP);
+                    BigDecimal value = new BigDecimal(disRankParam.getDisIntegralValue());
+                    BigDecimal newIntegralBg = new BigDecimal(0);
+                    if ("0".equals(disRankParam.getCalModel())) {
+                        newIntegralBg = amount.multiply(value).setScale(0, BigDecimal.ROUND_HALF_UP);
+                    } else {
+                        newIntegralBg = value.setScale(0, BigDecimal.ROUND_HALF_UP);
                     }
-                    Integer newIntegral=Integer.parseInt(String.valueOf(newIntegralBg));
-                    Integer totalIntegral=newIntegral+subMember.getRankIntegral();
-                    Integer totalRankIntegral = newIntegral+ subMember.getTotalRankIntegral();
+                    Integer newIntegral = Integer.parseInt(String.valueOf(newIntegralBg));
+                    Integer totalIntegral = newIntegral + subMember.getRankIntegral();
+                    Integer totalRankIntegral = newIntegral + subMember.getTotalRankIntegral();
                     DisRankIntegralRecord record = new DisRankIntegralRecord();
                     record.setBeforeIntegral(subMember.getRankIntegral());
                     record.setIsUse("N");
@@ -194,26 +203,26 @@ public class DisSysIntegralRecordServiceImpl implements IDisSysIntegralRecordSer
                     record.setSourceUserId(memberInfo.getDisUserId());
                     record.setSysIntegral(newIntegral);
 
-                    SysDic dic=new SysDic();
+                    SysDic dic = new SysDic();
                     dic.setDicTypeNo("effectiveTime");
-                    SysDic sysDic=sysDicMapper.selectOne(dic);
+                    SysDic sysDic = sysDicMapper.selectOne(dic);
                     record.setExpireTime(DateUtils.plusDay(Integer.parseInt(sysDic.getDicNo())));
-                    String sourceRemark="";
-                    if("0".equals(accountType)){
-                        String des= AccountTypeStatus.ZERO_STATUS.getAgentDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,amount.toString()
-                                ,newIntegral);
-                    }else if("1".equals(accountType)){
-                        String des= AccountTypeStatus.ONE_STATUS.getAgentDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,newIntegral);
-                    }else if("2".equals(accountType)){
-                        String des= AccountTypeStatus.TWO_STATUS.getAgentDes();
-                        sourceRemark=String.format(des,memberInfo.getDisUserId()
-                                ,newIntegral);
-                    }else {
-                        throw  new Exception("没有对应积分账户类型");
+                    String sourceRemark = "";
+                    if ("0".equals(accountType)) {
+                        String des = AccountTypeStatus.ZERO_STATUS.getAgentDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , amount.toString()
+                                , newIntegral);
+                    } else if ("1".equals(accountType)) {
+                        String des = AccountTypeStatus.ONE_STATUS.getAgentDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , newIntegral);
+                    } else if ("2".equals(accountType)) {
+                        String des = AccountTypeStatus.TWO_STATUS.getAgentDes();
+                        sourceRemark = String.format(des, memberInfo.getDisUserId()
+                                , newIntegral);
+                    } else {
+                        throw new Exception("没有对应积分账户类型");
                     }
                     record.setSourceRemak(sourceRemark);
                     //新增积分

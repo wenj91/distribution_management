@@ -113,6 +113,7 @@ public interface IConstantFactory {
 
     /**
      * 根据字典类型查询字典信息
+     *
      * @param typeNo
      * @return
      */

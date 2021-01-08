@@ -4,20 +4,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *产品类型
+ * 产品类型
  */
 public enum AccountTypeStatus {
 
     /**
      * 交易分润
      */
-    ZERO_STATUS("0","商品交易","trade","您的下级%s交易%s元,您获得%s积分","","您的平台用户%s交易%s元,您获得%s积分"),
+    ZERO_STATUS("0", "商品交易", "trade", "您的下级%s交易%s元,您获得%s积分", "", "您的平台用户%s交易%s元,您获得%s积分"),
     /**
      * 升级分润
      */
-    ONE_STATUS("1","升级","level","您的下级%s升级,您获得%s积分","","您的平台用户%s升级,您获得%s积分"),
+    ONE_STATUS("1", "升级", "level", "您的下级%s升级,您获得%s积分", "", "您的平台用户%s升级,您获得%s积分"),
 
-    TWO_STATUS("2","邀请","invite","您的邀请下级%s,您获得%s积分","","您的平台新增用户%s,您获得%s积分");
+    TWO_STATUS("2", "邀请", "invite", "您的邀请下级%s,您获得%s积分", "", "您的平台新增用户%s,您获得%s积分");
     //状态
     private String status;
     //描述
@@ -35,18 +35,19 @@ public enum AccountTypeStatus {
     private String agentDes;
 
     private static Map<String, AccountTypeStatus> map = new HashMap<String, AccountTypeStatus>();
+
     static {
         for (AccountTypeStatus legEnum : AccountTypeStatus.values()) {
             map.put(legEnum.getStatus(), legEnum);
         }
     }
 
-    AccountTypeStatus(String status, String mes, String code,String intDes ,String amountDes,String agentDes) {
-        this.status=status;
-        this.mes=mes;
-        this.code=code;
+    AccountTypeStatus(String status, String mes, String code, String intDes, String amountDes, String agentDes) {
+        this.status = status;
+        this.mes = mes;
+        this.code = code;
         this.intDes = intDes;
-        this.amountDes =amountDes;
+        this.amountDes = amountDes;
         this.agentDes = agentDes;
     }
 

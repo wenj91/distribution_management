@@ -39,15 +39,16 @@ import java.util.Map;
 
 /**
  * 系统对外开放接口
- * @author  xiaojiang
+ *
+ * @author xiaojiang
  */
 
 @Controller
 @RequestMapping("/api/v1/")
-public class OpenController  {
+public class OpenController {
 
 
-    private Logger logger =  LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Resource
     private DisMemberInfoMapper disMemberInfoMapper;
@@ -72,13 +73,13 @@ public class OpenController  {
      * 秘钥
      */
     @Value("${dist.jwt.secret}")
-    private  String secret;
+    private String secret;
 
     /**
      * 账户
      */
     @Value("${dist.jwt.account}")
-    private  String account;
+    private String account;
 
     /**
      * 是否使用秘钥校验
@@ -89,48 +90,49 @@ public class OpenController  {
 
     /**
      * 用户登录获取相关用户信息
+     *
      * @param userId
      */
     @GetMapping("/getUserInfo")
     @DataSource(name = DSEnum.DATA_SOURCE_BIZ)
     @ResponseBody
     @ApiOperation(value = "查询会员信息")
-    @ApiImplicitParam(name="userId",value="用户id",required = true,paramType = "query",dataType = "String")
-    public DistResult getUserInfo(String userId){
-        logger.info("会员查询->开始查询会员信息:{}",userId);
-        DisMemberInfo memberInfoParam=new DisMemberInfo();
+    @ApiImplicitParam(name = "userId", value = "用户id", required = true, paramType = "query", dataType = "String")
+    public DistResult getUserInfo(String userId) {
+        logger.info("会员查询->开始查询会员信息:{}", userId);
+        DisMemberInfo memberInfoParam = new DisMemberInfo();
         memberInfoParam.setDisUserId(userId);
-        DisMemberInfo  memberInfo=disMemberInfoMapper.selectOne(memberInfoParam);
+        DisMemberInfo memberInfo = disMemberInfoMapper.selectOne(memberInfoParam);
         logger.info("会员查询->开始查询会员账户");
-        DisMemberAmount disMemberAmountParam=new DisMemberAmount();
+        DisMemberAmount disMemberAmountParam = new DisMemberAmount();
         disMemberAmountParam.setDisUserId(userId);
-        DisMemberAmount disMemberAmount=disMemberAmountMapper.selectOne(disMemberAmountParam);
+        DisMemberAmount disMemberAmount = disMemberAmountMapper.selectOne(disMemberAmountParam);
 
-        Map<String ,Object> map=new HashMap<>(2);
-        if(memberInfo!=null){
-            map.put("member",memberInfo);
-            map.put("amount",disMemberAmount);
+        Map<String, Object> map = new HashMap<>(2);
+        if (memberInfo != null) {
+            map.put("member", memberInfo);
+            map.put("amount", disMemberAmount);
             logger.info("会员查询->查询结束");
             return DistResult.success(map);
-        }else{
+        } else {
             logger.info("会员查询->查询结束，未查到信息");
             return DistResult.failure("没有此用户");
         }
     }
 
     /**
-     *  用户查询他发展的会员
+     * 用户查询他发展的会员
      */
     @PostMapping(value = "/subordinate")
     @ResponseBody
     @ApiOperation(value = "会员直属下级会员", notes = "此接口是查询会员直属下级会员")
 //    @OpenApiEncrypt
-    public DistResult subordinateMember(@RequestBody  SubordinateReq subordinateReq) {
+    public DistResult subordinateMember(@RequestBody SubordinateReq subordinateReq) {
         logger.info("会员下级->开始查询");
-        if(!isAccountVer(subordinateReq.getSecret())) {
-            return   DistResult.failure("非法访问！");
+        if (!isAccountVer(subordinateReq.getSecret())) {
+            return DistResult.failure("非法访问！");
         }
-        if(!verifyMember(subordinateReq.getMemberId())){
+        if (!verifyMember(subordinateReq.getMemberId())) {
             return DistResult.failure("用户校验失败");
         }
         List<SubordinateResp> list = disMemberInfoService.getSubordinateInfo(subordinateReq);
@@ -148,43 +150,47 @@ public class OpenController  {
 //    @OpenApiEncrypt
     public DistResult inviteMember(@RequestBody DisMemberInfoVo memberInfoVo) throws Exception {
         logger.info("新增会员->开始进入新增会员");
-        if(!isAccountVer(memberInfoVo.getSecret())){
+        if (!isAccountVer(memberInfoVo.getSecret())) {
             return DistResult.failure("非法访问");
         }
-        if(StringUtils.isEmpty(memberInfoVo.getDisParentId())&& StringUtils.isEmpty(memberInfoVo.getDisPlatformId())){
+
+        if (StringUtils.isEmpty(memberInfoVo.getDisParentId()) && StringUtils.isEmpty(memberInfoVo.getDisPlatformId())) {
             return DistResult.failure("不存在的邀请用户");
         }
+
         String superPlatId;
-        if(StringUtils.isNotEmpty(memberInfoVo.getDisParentId())){
-            DisMemberInfo param= disMemberInfoService.selectListByUserId(memberInfoVo.getDisParentId());
-            if(param==null){
+        if (StringUtils.isNotEmpty(memberInfoVo.getDisParentId())) {
+            DisMemberInfo param = disMemberInfoService.selectListByUserId(memberInfoVo.getDisParentId());
+            if (param == null) {
                 return DistResult.failure("邀请用户不存在");
-            }else {
-                if(param.getConfineStatus() == ConfineStatus.ONE_STAUTS.getStatus()){
+            } else {
+                if (param.getConfineStatus() == ConfineStatus.ONE_STAUTS.getStatus()) {
                     //会员被禁止邀请请会员
                     memberInfoVo.setDisParentId(null);
                     return DistResult.failure("邀请用户非法");
                 }
-                superPlatId=param.getDisPlatSuper();
+                superPlatId = param.getDisPlatSuper();
             }
-        }else {
+        } else {
             superPlatId = memberInfoVo.getDisPlatformId();
         }
-        User user=userMgrDao.getByAccount(superPlatId);
-        if(user==null){
+
+        User user = userMgrDao.getByAccount(superPlatId);
+        if (user == null) {
             return DistResult.failure("平台商不存在");
         }
 
-        if(verifyMember(memberInfoVo.getDisUserId())){
+        if (verifyMember(memberInfoVo.getDisUserId())) {
             return DistResult.failure("用户已存在");
         }
-        DisMemberInfo memberInfo=new DisMemberInfo();
-        BeanUtils.copyProperties(memberInfoVo,memberInfo);
+
+        DisMemberInfo memberInfo = new DisMemberInfo();
+        BeanUtils.copyProperties(memberInfoVo, memberInfo);
         memberInfo.setDisUserType(UserTypeStatus.ZERO_STATUS.getStatus());
         memberInfo.setDisPlatSuper(user.getAccount());
         memberInfo.setDisPlatLevel(Integer.parseInt(user.getLevel()));
         memberInfo.setDisPlatFullIndex(user.getFullindex());
-        String[]  platArr = user.getFullindex().split("\\.");
+        String[] platArr = user.getFullindex().split("\\.");
         memberInfo.setDisPlatformId(platArr[1]);
         memberInfo.setIdentityType(IdentityStatus.USER_STATUS.getStatus());
         disMemberInfoService.save(memberInfo);
@@ -204,13 +210,13 @@ public class OpenController  {
         // 交易奖励
         disProfitRecordVo.setAccountType(AccountTypeStatus.ZERO_STATUS.getStatus());
         logger.info("订单交易->开始订单交易");
-        if(!isAccountVer(disProfitRecordVo.getSecret())) {
-           return   DistResult.failure("非法访问！");
+        if (!isAccountVer(disProfitRecordVo.getSecret())) {
+            return DistResult.failure("非法访问！");
         }
         // 查询交易人是否存在
-        DisMemberInfo memberInfo=disMemberInfoService.selectListByUserId(disProfitRecordVo.getDisSetUserId());
-        if(memberInfo==null){
-           return  DistResult.failure("用户不存在！");
+        DisMemberInfo memberInfo = disMemberInfoService.selectListByUserId(disProfitRecordVo.getDisSetUserId());
+        if (memberInfo == null) {
+            return DistResult.failure("用户不存在！");
         }
         disProfitRecordVo.setAccountType(AccountTypeStatus.ZERO_STATUS.getStatus());
         disProfitRecordVo.setDisPlatformId(memberInfo.getDisPlatformId());
@@ -218,6 +224,7 @@ public class OpenController  {
         logger.info("订单交易->订单交易结束");
         return DistResult.success(disProfitRecordVo);
     }
+
     /**
      * 会员升级后调用此接口，相关联的数据会产生分润
      * 垂直升级，即会员通过付费进行升级
@@ -229,16 +236,16 @@ public class OpenController  {
 //    @OpenApiEncrypt
     public DistResult upgradeLevel(@RequestBody DisProfitRecordVo disProfitRecordVo) throws Exception {
         disProfitRecordVo.setAccountType(AccountTypeStatus.ONE_STATUS.getStatus());
-        logger.info("用户升级->开始升级,入参{}",disProfitRecordVo.toString());
-        if(!isAccountVer(disProfitRecordVo.getSecret())) {
-            return   DistResult.failure("非法访问！");
+        logger.info("用户升级->开始升级,入参{}", disProfitRecordVo.toString());
+        if (!isAccountVer(disProfitRecordVo.getSecret())) {
+            return DistResult.failure("非法访问！");
         }
         //根据直属上级查询到所属平台id
-        DisMemberInfo memberInfo=disMemberInfoService.selectListByUserId(disProfitRecordVo.getDisSetUserId());
-        if(memberInfo==null){
+        DisMemberInfo memberInfo = disMemberInfoService.selectListByUserId(disProfitRecordVo.getDisSetUserId());
+        if (memberInfo == null) {
             return DistResult.failure("用户不存在！");
         }
-        if(disProfitRecordVo.getUpgradeLevel()==null){
+        if (disProfitRecordVo.getUpgradeLevel() == null) {
             return DistResult.failure("请提供要升级的等级");
         }
         disProfitRecordVo.setDisPlatformId(memberInfo.getDisPlatformId());
@@ -251,9 +258,9 @@ public class OpenController  {
     }
 
 
-
     /**
      * 用户提现，针对用户界面对某一账户进行提现
+     *
      * @param withdrawVo
      */
     @PostMapping(value = "/withdraw")
@@ -262,16 +269,16 @@ public class OpenController  {
     @StatisticsSocket
 //    @OpenApiEncrypt
     public DistResult withdraw(@RequestBody DisWithdrawVo withdrawVo) {
-        logger.info("会员提现->开始提现,入参信息:{}",withdrawVo.toString());
-        if(!isAccountVer(withdrawVo.getSecret())) {
-            return   DistResult.failure("非法访问！");
+        logger.info("会员提现->开始提现,入参信息:{}", withdrawVo.toString());
+        if (!isAccountVer(withdrawVo.getSecret())) {
+            return DistResult.failure("非法访问！");
         }
-        if(!verifyMember(withdrawVo.getUserId())){
+        if (!verifyMember(withdrawVo.getUserId())) {
             return DistResult.failure("用户校验失败");
         }
-        if(isAccountVer(withdrawVo.getSecret())) {
-            disWithdrawRecordService.withdrawMoney(withdrawVo.getUserId(),withdrawVo.getAmount(),withdrawVo.getAccountType());
-        }else {
+        if (isAccountVer(withdrawVo.getSecret())) {
+            disWithdrawRecordService.withdrawMoney(withdrawVo.getUserId(), withdrawVo.getAmount(), withdrawVo.getAccountType());
+        } else {
             return DistResult.failure("非法访问");
         }
         logger.info("会员体现->提现结束");
@@ -280,18 +287,20 @@ public class OpenController  {
 
     /**
      * 获取调用接口授权码
+     *
      * @return DistResult
      */
     @GetMapping("/getSign")
     @ResponseBody
     @ApiOperation(value = "获取secret", notes = "获取secret")
     public DistResult getSign() {
-        String key= Jwt.sign(account,secret,30L * 24L * 3600L * 1000L);
+        String key = Jwt.sign(account, secret, 30L * 24L * 3600L * 1000L);
         return DistResult.success(key);
     }
 
     /**
      * jwt校验
+     *
      * @param thirdSecret
      * @return
      */
@@ -308,17 +317,18 @@ public class OpenController  {
      * 原则上可以支持每个平台商下的用户可以重名
      * 但是为了以后的扩展这里设置不可以重名
      * 如果需要重名，系统需要修改提现的部分，需要增加平台
+     *
      * @param userId
      * @return boolean
      */
-    private Boolean verifyMember(String userId){
-        logger.info("会员校验->开始校验:{}",userId);
-        Boolean verify =true ;
-        DisMemberInfo memberInfo=disMemberInfoService.selectListByUserId(userId);
-        if(memberInfo==null){
-            verify =false;
+    private Boolean verifyMember(String userId) {
+        logger.info("会员校验->开始校验:{}", userId);
+        Boolean verify = true;
+        DisMemberInfo memberInfo = disMemberInfoService.selectListByUserId(userId);
+        if (memberInfo == null) {
+            verify = false;
         }
-        logger.info("会员校验->会员校验结束:{}",verify);
+        logger.info("会员校验->会员校验结束:{}", verify);
         return verify;
     }
 }
